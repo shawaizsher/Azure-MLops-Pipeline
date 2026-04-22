@@ -23,9 +23,14 @@ Binary classification: predict whether a borrower is likely to default.
 cd simple-ml-model
 pip install -r requirements.txt
 python src/train.py
+python src/predict_sample.py
 ```
 
 ## Output
 Running training will create:
 - `outputs/model.joblib` (trained pipeline)
 - `outputs/metrics.json` (evaluation metrics)
+
+## Notes
+- Run `python src/train.py` first so the model artifact exists for inference.
+- `src/predict_sample.py` prints predictions and default probabilities for 5 sample rows.
