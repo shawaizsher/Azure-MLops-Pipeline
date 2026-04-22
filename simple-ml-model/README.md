@@ -24,6 +24,7 @@ cd simple-ml-model
 pip install -r requirements.txt
 python src/train.py
 python src/predict_sample.py
+streamlit run app.py
 ```
 
 ## Output
@@ -34,3 +35,16 @@ Running training will create:
 ## Notes
 - Run `python src/train.py` first so the model artifact exists for inference.
 - `src/predict_sample.py` prints predictions and default probabilities for 5 sample rows.
+
+## Streamlit Web App
+The app provides a simple UI to showcase the model:
+- Train or reload the saved model from the sidebar
+- View dataset summary and latest evaluation metrics
+- Predict default risk for an existing sample row
+- Predict default risk for custom applicant inputs
+
+Run it with:
+```bash
+cd simple-ml-model
+streamlit run app.py
+```
