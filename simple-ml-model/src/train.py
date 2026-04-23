@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 import joblib
+import mlflow
+import mlflow.sklearn
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.datasets import fetch_openml
@@ -67,10 +70,21 @@ def evaluate_model(model: Pipeline, x_test: pd.DataFrame, y_test: pd.Series) -> 
     }
 
 
+def configure_mlflow(project_root: Path) -> Path:
+    tracking_dir = project_root / "src" / "mlruns"
+    tracking_dir.mkdir(parents=True, exist_ok=True)
+
+    mlflow.set_tracking_uri(tracking_dir.as_uri())
+    mlflow.set_experiment("loan-default-prediction")
+
+    return tracking_dir
+
+
 def main() -> None:
     project_root = Path(__file__).resolve().parents[1]
     output_dir = project_root / "outputs"
     output_dir.mkdir(parents=True, exist_ok=True)
+    tracking_dir = configure_mlflow(project_root)
 
     features, target = load_dataset()
 
@@ -86,12 +100,46 @@ def main() -> None:
     )
 
     pipeline = build_pipeline(numeric_features, categorical_features)
-    pipeline.fit(x_train, y_train)
+    run_name = f"logreg-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
-    metrics = evaluate_model(pipeline, x_test, y_test)
+    with mlflow.start_run(run_name=run_name):
+        mlflow.log_params(
+            {
+                "model_type": "logistic_regression",
+                "dataset": "credit-g",
+                "test_size": 0.2,
+                "random_state": 42,
+            }
+        )
 
-    joblib.dump(pipeline, output_dir / "model.joblib")
-    (output_dir / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+        pipeline.fit(x_train, y_train)
+
+        metrics = evaluate_model(pipeline, x_test, y_test)
+        mlflow.log_metrics(metrics)
+
+        joblib.dump(pipeline, output_dir / "model.joblib")
+        metrics_path = output_dir / "metrics.json"
+        metrics_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+        mlflow.log_artifact(str(metrics_path))
+
+        registered_model_name = "loan-default-classifier"
+        try:
+            mlflow.sklearn.log_model(
+                sk_model=pipeline,
+                artifact_path="model",
+                registered_model_name=registered_model_name,
+            )
+        except Exception:
+            # Fallback for tracking stores where model registry is unavailable.
+            registered_model_name = None
+            mlflow.sklearn.log_model(sk_model=pipeline, artifact_path="model")
+
+        active_run = mlflow.active_run()
+        if active_run is not None:
+            print("MLflow run id:", active_run.info.run_id)
+        print("MLflow tracking directory:", tracking_dir)
+        if registered_model_name is not None:
+            print("Registered model:", registered_model_name)
 
     print("Training complete.")
     print("Saved model to:", output_dir / "model.joblib")

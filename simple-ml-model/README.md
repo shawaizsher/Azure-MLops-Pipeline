@@ -25,12 +25,19 @@ pip install -r requirements.txt
 python src/train.py
 python src/predict_sample.py
 streamlit run app.py
+mlflow ui --backend-store-uri .\\src\\mlruns --host 127.0.0.1 --port 5000 -w 1
 ```
 
 ## Output
 Running training will create:
 - `outputs/model.joblib` (trained pipeline)
 - `outputs/metrics.json` (evaluation metrics)
+
+The training script also logs to MLflow:
+- Experiment: `loan-default-prediction`
+- Registered model: `loan-default-classifier`
+
+Open MLflow at `http://127.0.0.1:5000` to inspect runs and model versions.
 
 ## Notes
 - Run `python src/train.py` first so the model artifact exists for inference.
