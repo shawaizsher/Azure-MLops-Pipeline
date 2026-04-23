@@ -20,7 +20,7 @@ name: Deploy Python project to Azure Function App
 
 on:
   push:
-    branches:
+    branches: # List of branches to trigger deployment, e.g.:
       - main
       - feature/**
   workflow_dispatch:

@@ -50,3 +50,5 @@ streamlit run app.py
 
 - On Windows, using `-w 1` for MLflow UI avoids intermittent multi-worker socket issues.
 - MLflow filesystem backend works for local development; consider SQLite backend for longer-term usage.
+
+- Developed by Shawaiz Sher
