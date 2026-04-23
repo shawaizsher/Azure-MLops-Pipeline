@@ -16,7 +16,9 @@ Binary classification: predict whether a borrower is likely to default.
 - Preprocessing:
   - Numeric features: median imputation + standard scaling
   - Categorical features: most-frequent imputation + one-hot encoding
-- Algorithm: Logistic Regression
+- Algorithms:
+  - Logistic Regression
+  - Random Forest
 
 ## Quick Start
 ```bash
@@ -30,14 +32,21 @@ mlflow ui --backend-store-uri .\\src\\mlruns --host 127.0.0.1 --port 5000 -w 1
 
 ## Output
 Running training will create:
-- `outputs/model.joblib` (trained pipeline)
-- `outputs/metrics.json` (evaluation metrics)
+- `outputs/model.joblib` (baseline trained pipeline: logistic regression)
+- `outputs/metrics.json` (baseline evaluation metrics)
+- `outputs/model_logistic_regression.joblib`
+- `outputs/model_random_forest.joblib`
+- `outputs/metrics_logistic_regression.json`
+- `outputs/metrics_random_forest.json`
+- `outputs/metrics_comparison.json`
 
 The training script also logs to MLflow:
 - Experiment: `loan-default-prediction`
-- Registered model: `loan-default-classifier`
+- Registered model: `loan-default-classifier-logreg`
+- Registered model: `loan-default-classifier-random-forest`
 
 Open MLflow at `http://127.0.0.1:5000` to inspect runs and model versions.
+Use the experiment runs table to compare metric values between both algorithms.
 
 ## Notes
 - Run `python src/train.py` first so the model artifact exists for inference.
