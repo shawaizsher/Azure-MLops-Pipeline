@@ -1,0 +1,10 @@
+artifact_location: file:///C:/Users/SHER/anaconda3/envs/azure-mlops-pipeline/simple-ml-model/src/mlruns/860031196464870248/models/m-6f015b6102fb4a05adc2b6523a483666/artifacts
+creation_timestamp: 1776937842952
+experiment_id: '860031196464870248'
+last_updated_timestamp: 1776937847238
+model_id: m-6f015b6102fb4a05adc2b6523a483666
+model_type: null
+name: model
+source_run_id: e73af3d26f67481a8804b0069c98fbcd
+status: 2
+status_message: null

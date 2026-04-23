@@ -1,0 +1,16 @@
+creation_timestamp: 1776937851359
+current_stage: None
+deployment_job_state: null
+description: null
+last_updated_timestamp: 1776937851359
+model_id: m-dda6d15fcf684e9e985712bbb62f8bff
+name: loan-default-classifier-random-forest
+run_id: 3206e24bb09443e793f3797cefe49379
+run_link: null
+source: models:/m-dda6d15fcf684e9e985712bbb62f8bff
+status: READY
+status_message: null
+storage_location: file:///C:/Users/SHER/anaconda3/envs/azure-mlops-pipeline/simple-ml-model/src/mlruns/860031196464870248/models/m-dda6d15fcf684e9e985712bbb62f8bff/artifacts
+user_id: null
+version: 1
+workspace: default

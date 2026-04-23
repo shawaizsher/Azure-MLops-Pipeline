@@ -1,0 +1,8 @@
+artifact_location: file:///C:/Users/SHER/anaconda3/envs/azure-mlops-pipeline/simple-ml-model/src/mlruns/860031196464870248
+creation_time: 1776936396258
+experiment_id: '860031196464870248'
+last_update_time: 1776936396258
+lifecycle_stage: active
+name: loan-default-prediction
+trace_location: null
+workspace: default

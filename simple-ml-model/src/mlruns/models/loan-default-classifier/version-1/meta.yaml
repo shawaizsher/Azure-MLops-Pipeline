@@ -1,0 +1,16 @@
+creation_timestamp: 1776936401569
+current_stage: None
+deployment_job_state: null
+description: null
+last_updated_timestamp: 1776936401569
+model_id: m-d9739e024ad3444a8322df57daafc318
+name: loan-default-classifier
+run_id: 73083aaf70b448dc9b1f48872c49b502
+run_link: null
+source: models:/m-d9739e024ad3444a8322df57daafc318
+status: READY
+status_message: null
+storage_location: file:///C:/Users/SHER/anaconda3/envs/azure-mlops-pipeline/simple-ml-model/src/mlruns/860031196464870248/models/m-d9739e024ad3444a8322df57daafc318/artifacts
+user_id: null
+version: 1
+workspace: default

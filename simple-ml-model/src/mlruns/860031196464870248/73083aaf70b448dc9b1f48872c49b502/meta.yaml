@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/SHER/anaconda3/envs/azure-mlops-pipeline/simple-ml-model/src/mlruns/860031196464870248/73083aaf70b448dc9b1f48872c49b502/artifacts
+end_time: 1776936401609
+entry_point_name: ''
+experiment_id: '860031196464870248'
+lifecycle_stage: active
+run_id: 73083aaf70b448dc9b1f48872c49b502
+run_name: logreg-20260423-142636
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1776936396516
+status: 3
+tags: []
+user_id: SHER

@@ -1,0 +1,23 @@
+artifact_path: file:///C:/Users/SHER/anaconda3/envs/azure-mlops-pipeline/simple-ml-model/src/mlruns/860031196464870248/models/m-d9739e024ad3444a8322df57daafc318/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.13.7
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.11.1
+model_id: m-d9739e024ad3444a8322df57daafc318
+model_size_bytes: 5015
+model_uuid: m-d9739e024ad3444a8322df57daafc318
+prompts: null
+run_id: 73083aaf70b448dc9b1f48872c49b502
+utc_time_created: '2026-04-23 09:26:36.710033'
