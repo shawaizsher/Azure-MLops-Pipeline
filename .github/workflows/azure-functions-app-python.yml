@@ -85,15 +85,25 @@ jobs:
         fi
 
         echo "Checking deployed site at: ${APP_URL}"
-        for _ in {1..12}; do
-          PAGE_CONTENT="$(curl -fsSL "$APP_URL" || true)"
-          if [ -n "$PAGE_CONTENT" ] && ! echo "$PAGE_CONTENT" | grep -q "Hey, App Service developers!"; then
+        for _ in {1..36}; do
+          HTTP_CODE="$(curl -sS -o /tmp/page.html -w "%{http_code}" "$APP_URL" || true)"
+          PAGE_CONTENT="$(cat /tmp/page.html 2>/dev/null || true)"
+
+          if [ "$HTTP_CODE" = "200" ] && ! echo "$PAGE_CONTENT" | grep -q "Hey, App Service developers!"; then
             echo "App content detected."
             exit 0
           fi
-          echo "Default placeholder still present. Retrying in 10 seconds..."
+
+          if [ "$HTTP_CODE" = "503" ]; then
+            echo "App returning 503 (container warming up or failing startup). Retrying in 10 seconds..."
+          elif [ "$HTTP_CODE" = "200" ] && echo "$PAGE_CONTENT" | grep -q "Hey, App Service developers!"; then
+            echo "Default placeholder still present. Retrying in 10 seconds..."
+          else
+            echo "Current HTTP status: ${HTTP_CODE:-unknown}. Retrying in 10 seconds..."
+          fi
+
           sleep 10
         done
 
-        echo "::error::Deployment completed but Azure is still serving the default placeholder page. Confirm the App Service container image points to ${{ steps.image.outputs.image }} and that the image is pullable (for GHCR private images, configure registry credentials or make the package public)."
+        echo "::error::Deployment completed but app did not become healthy in time. Confirm App Service is using image ${{ steps.image.outputs.image }}, container logs show successful startup, and registry pull access is configured (or GHCR package is public)."
         exit 1
