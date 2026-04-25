@@ -1,11 +1,12 @@
-# This workflow deploys the Streamlit app to Azure App Service using a publish profile.
+# This workflow builds a container image for the Streamlit app and deploys
+# it to Azure App Service (Web App for Containers) using a publish profile.
 #
 # Required secret (preferred):
 #   - AZURE_WEBAPP_PUBLISH_PROFILE
 # Optional backward-compatible secret name:
 #   - AZURE_FUNCTIONAPP_PUBLISH_PROFILE
 
-name: Deploy Python project to Azure Web App
+name: Build and Deploy Streamlit Container to Azure Web App
 
 on:
   push:
@@ -14,10 +15,15 @@ on:
       - feature/**
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   AZURE_WEBAPP_NAME: 'mlops-pipeline-app'   # set this to your Azure Web App name
-  AZURE_WEBAPP_PACKAGE_PATH: 'simple-ml-model' # path to your app project folder
-  AZURE_WEBAPP_ZIP_PATH: 'release.zip'
+  AZURE_WEBAPP_APP_PATH: 'simple-ml-model' # path to your app project folder
+  CONTAINER_REGISTRY: 'ghcr.io'
+  CONTAINER_IMAGE_NAME: 'mlops-pipeline-app'
 
 jobs:
   build-and-deploy:
@@ -38,23 +44,36 @@ jobs:
           exit 1
         fi
 
-    - name: 'Package app content for zip deploy'
+    - name: 'Compute container image reference'
+      id: image
       shell: bash
       run: |
-        pushd './${{ env.AZURE_WEBAPP_PACKAGE_PATH }}'
-        zip -r '../${{ env.AZURE_WEBAPP_ZIP_PATH }}' . \
-          -x '*.git*' \
-          -x '__pycache__/*' \
-          -x 'src/mlruns/*' \
-          -x 'outputs/*'
-        popd
+        OWNER_LOWER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+        IMAGE_REF="${{ env.CONTAINER_REGISTRY }}/${OWNER_LOWER}/${{ env.CONTAINER_IMAGE_NAME }}:${{ github.sha }}"
+        echo "image=${IMAGE_REF}" >> "$GITHUB_OUTPUT"
+        echo "Container image: ${IMAGE_REF}"
 
-    - name: 'Deploy to Azure Web App'
+    - name: 'Log in to GHCR'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.CONTAINER_REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+
+    - name: 'Build and push container image'
+      uses: docker/build-push-action@v6
+      with:
+        context: ${{ env.AZURE_WEBAPP_APP_PATH }}
+        file: ${{ env.AZURE_WEBAPP_APP_PATH }}/Dockerfile
+        push: true
+        tags: ${{ steps.image.outputs.image }}
+
+    - name: 'Deploy container image to Azure Web App'
       uses: azure/webapps-deploy@v3
       id: deploy
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        package: ${{ env.AZURE_WEBAPP_ZIP_PATH }}
+        images: ${{ steps.image.outputs.image }}
         publish-profile: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE != '' && env.AZURE_WEBAPP_PUBLISH_PROFILE || env.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
 
     - name: 'Verify app is not serving default placeholder'
@@ -76,5 +95,5 @@ jobs:
           sleep 10
         done
 
-        echo "::error::Deployment completed but Azure is still serving the default App Service placeholder page. In Azure Portal, switch the Web App from Container mode to Code mode and select Python runtime, then redeploy."
+        echo "::error::Deployment completed but Azure is still serving the default placeholder page. Confirm the App Service container image points to ${{ steps.image.outputs.image }} and that the image is pullable (for GHCR private images, configure registry credentials or make the package public)."
         exit 1

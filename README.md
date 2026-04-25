@@ -51,11 +51,13 @@ streamlit run app.py
 - On Windows, using `-w 1` for MLflow UI avoids intermittent multi-worker socket issues.
 - MLflow filesystem backend works for local development; consider SQLite backend for longer-term usage.
 
-## Azure App Service Deployment Prerequisites
+## Azure App Service Container Deployment
 
-- Use a Linux App Service configured for **Code**, not **Container**.
-- Runtime stack must be Python.
-- If Azure shows `Container Image: mcr.microsoft.com/appsvc/staticsite:latest`, the app is in container placeholder mode and this repository zip deployment will not serve the Streamlit app.
-- Set startup command in Azure Portal (Configuration -> General settings) to: `bash startup.sh`
+- Use a Linux App Service configured for **Container** publishing.
+- The workflow builds and pushes a container image to GHCR, then points the web app to that image.
+- If you still see `Container Image: mcr.microsoft.com/appsvc/staticsite:latest`, the deployment did not update the web app image yet.
+- Ensure the deployed GHCR package is pullable by App Service:
+	- Preferred: make the package public.
+	- Or configure container registry credentials for GHCR in App Service container settings.
 
 - By Shawaiz Sher
