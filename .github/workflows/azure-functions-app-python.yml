@@ -68,6 +68,43 @@ jobs:
         push: true
         tags: ${{ steps.image.outputs.image }}
 
+    - name: 'Ensure GHCR package is public for App Service pull'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        OWNER="${{ github.repository_owner }}"
+        PACKAGE="${{ env.CONTAINER_IMAGE_NAME }}"
+
+        OWNER_TYPE="$(curl -fsSL "https://api.github.com/users/${OWNER}" | jq -r '.type')"
+        if [ "$OWNER_TYPE" = "Organization" ]; then
+          API_BASE="https://api.github.com/orgs/${OWNER}/packages/container/${PACKAGE}"
+        else
+          API_BASE="https://api.github.com/users/${OWNER}/packages/container/${PACKAGE}"
+        fi
+
+        VISIBILITY="$(curl -fsSL \
+          -H "Authorization: Bearer ${GH_TOKEN}" \
+          -H "Accept: application/vnd.github+json" \
+          "${API_BASE}" | jq -r '.visibility // empty')"
+
+        if [ -z "$VISIBILITY" ]; then
+          echo "::error::Unable to read GHCR package visibility for ${PACKAGE}."
+          exit 1
+        fi
+
+        if [ "$VISIBILITY" != "public" ]; then
+          echo "Package visibility is '${VISIBILITY}'. Updating to public for App Service pull access."
+          curl -fsSL -X PATCH \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${API_BASE}/visibility" \
+            -d '{"visibility":"public"}' >/dev/null
+          echo "GHCR package visibility set to public."
+        else
+          echo "GHCR package already public."
+        fi
+
     - name: 'Deploy container image to Azure Web App'
       uses: azure/webapps-deploy@v3
       id: deploy
@@ -84,6 +121,8 @@ jobs:
           APP_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
         fi
 
+        SAW_403=0
+
         echo "Checking deployed site at: ${APP_URL}"
         for _ in {1..36}; do
           HTTP_CODE="$(curl -sS -o /tmp/page.html -w "%{http_code}" "$APP_URL" || true)"
@@ -96,6 +135,9 @@ jobs:
 
           if [ "$HTTP_CODE" = "503" ]; then
             echo "App returning 503 (container warming up or failing startup). Retrying in 10 seconds..."
+          elif [ "$HTTP_CODE" = "403" ]; then
+            SAW_403=1
+            echo "App returning 403 (forbidden). Retrying in 10 seconds..."
           elif [ "$HTTP_CODE" = "200" ] && echo "$PAGE_CONTENT" | grep -q "Hey, App Service developers!"; then
             echo "Default placeholder still present. Retrying in 10 seconds..."
           else
@@ -104,6 +146,11 @@ jobs:
 
           sleep 10
         done
+
+        if [ "$SAW_403" = "1" ]; then
+          echo "::error::Deployment completed but app responded with HTTP 403. Check App Service Authentication and Access Restrictions settings. Also confirm the container image pull configuration is valid."
+          exit 1
+        fi
 
         echo "::error::Deployment completed but app did not become healthy in time. Confirm App Service is using image ${{ steps.image.outputs.image }}, container logs show successful startup, and registry pull access is configured (or GHCR package is public)."
         exit 1
