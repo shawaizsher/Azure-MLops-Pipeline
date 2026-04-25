@@ -51,4 +51,11 @@ streamlit run app.py
 - On Windows, using `-w 1` for MLflow UI avoids intermittent multi-worker socket issues.
 - MLflow filesystem backend works for local development; consider SQLite backend for longer-term usage.
 
+## Azure App Service Deployment Prerequisites
+
+- Use a Linux App Service configured for **Code**, not **Container**.
+- Runtime stack must be Python.
+- If Azure shows `Container Image: mcr.microsoft.com/appsvc/staticsite:latest`, the app is in container placeholder mode and this repository zip deployment will not serve the Streamlit app.
+- Set startup command in Azure Portal (Configuration -> General settings) to: `bash startup.sh`
+
 - By Shawaiz Sher

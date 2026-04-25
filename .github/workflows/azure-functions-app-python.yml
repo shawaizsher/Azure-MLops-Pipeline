@@ -56,3 +56,25 @@ jobs:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
         package: ${{ env.AZURE_WEBAPP_ZIP_PATH }}
         publish-profile: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE != '' && env.AZURE_WEBAPP_PUBLISH_PROFILE || env.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+
+    - name: 'Verify app is not serving default placeholder'
+      shell: bash
+      run: |
+        APP_URL="${{ steps.deploy.outputs.webapp-url }}"
+        if [ -z "$APP_URL" ]; then
+          APP_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
+        fi
+
+        echo "Checking deployed site at: ${APP_URL}"
+        for _ in {1..12}; do
+          PAGE_CONTENT="$(curl -fsSL "$APP_URL" || true)"
+          if [ -n "$PAGE_CONTENT" ] && ! echo "$PAGE_CONTENT" | grep -q "Hey, App Service developers!"; then
+            echo "App content detected."
+            exit 0
+          fi
+          echo "Default placeholder still present. Retrying in 10 seconds..."
+          sleep 10
+        done
+
+        echo "::error::Deployment completed but Azure is still serving the default App Service placeholder page. In Azure Portal, switch the Web App from Container mode to Code mode and select Python runtime, then redeploy."
+        exit 1
