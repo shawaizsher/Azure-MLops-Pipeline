@@ -17,6 +17,7 @@ on:
 env:
   AZURE_WEBAPP_NAME: 'mlops-pipeline-app'   # set this to your Azure Web App name
   AZURE_WEBAPP_PACKAGE_PATH: 'simple-ml-model' # path to your app project folder
+  AZURE_WEBAPP_ZIP_PATH: 'release.zip'
 
 jobs:
   build-and-deploy:
@@ -37,10 +38,21 @@ jobs:
           exit 1
         fi
 
+    - name: 'Package app content for zip deploy'
+      shell: bash
+      run: |
+        pushd './${{ env.AZURE_WEBAPP_PACKAGE_PATH }}'
+        zip -r '../${{ env.AZURE_WEBAPP_ZIP_PATH }}' . \
+          -x '*.git*' \
+          -x '__pycache__/*' \
+          -x 'src/mlruns/*' \
+          -x 'outputs/*'
+        popd
+
     - name: 'Deploy to Azure Web App'
       uses: azure/webapps-deploy@v3
       id: deploy
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        package: ${{ env.AZURE_WEBAPP_ZIP_PATH }}
         publish-profile: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE != '' && env.AZURE_WEBAPP_PUBLISH_PROFILE || env.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
