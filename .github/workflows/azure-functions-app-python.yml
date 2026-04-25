@@ -1,23 +1,11 @@
-# This workflow will build a Python app and deploy it to an Azure Functions App on Linux when a commit is pushed to your default branch.
+# This workflow deploys the Streamlit app to Azure App Service using a publish profile.
 #
-# This workflow assumes you have already created the target Azure Functions app.
-# For instructions see https://learn.microsoft.com/en-us/azure/azure-functions/create-first-function-vs-code-python?pivots=python-mode-configuration
-#
-# To configure this workflow:
-# 1. Set up the following secrets in your repository:
+# Required secret (preferred):
+#   - AZURE_WEBAPP_PUBLISH_PROFILE
+# Optional backward-compatible secret name:
 #   - AZURE_FUNCTIONAPP_PUBLISH_PROFILE
-#   - AZURE_RBAC_CREDENTIALS (required only if using RBAC instead of publish profile)
-# 2. Change env variables for your configuration.
-#
-# For more information on:
-#   - GitHub Actions for Azure: https://github.com/Azure/Actions
-#   - Azure Functions Action: https://github.com/Azure/functions-action
-#   - Publish Profile: https://github.com/Azure/functions-action#using-publish-profile-as-deployment-credential-recommended
-#   - Azure Service Principal for RBAC: https://github.com/Azure/functions-action#using-azure-service-principal-for-rbac-as-deployment-credential
-#
-# For more samples to get started with GitHub Action workflows to deploy to Azure: https://github.com/Azure/actions-workflow-samples/tree/master/FunctionApp
 
-name: Deploy Python project to Azure Function App
+name: Deploy Python project to Azure Web App
 
 on:
   push:
@@ -27,17 +15,16 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_NAME: 'Loan-Predictor'   # set this to your function app name on Azure
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'simple-ml-model' # path to your function app project folder
-  PYTHON_VERSION: '3.9'                     # set this to the python version to use (e.g. '3.6', '3.7', '3.8')
+  AZURE_WEBAPP_NAME: 'mlops-pipeline-app'   # set this to your Azure Web App name
+  AZURE_WEBAPP_PACKAGE_PATH: 'simple-ml-model' # path to your app project folder
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     environment: dev
     env:
+      AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
       AZURE_FUNCTIONAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
-      AZURE_RBAC_CREDENTIALS: ${{ secrets.AZURE_RBAC_CREDENTIALS }}
     steps:
     - name: 'Checkout GitHub Action'
       uses: actions/checkout@v4
@@ -45,47 +32,15 @@ jobs:
     - name: 'Validate deployment auth configuration'
       shell: bash
       run: |
-        if [ -z "${AZURE_FUNCTIONAPP_PUBLISH_PROFILE}" ] && [ -z "${AZURE_RBAC_CREDENTIALS}" ]; then
-          echo "Either AZURE_FUNCTIONAPP_PUBLISH_PROFILE or AZURE_RBAC_CREDENTIALS must be configured as a repository secret."
+        if [ -z "${AZURE_WEBAPP_PUBLISH_PROFILE}" ] && [ -z "${AZURE_FUNCTIONAPP_PUBLISH_PROFILE}" ]; then
+          echo "Missing publish profile secret. Set AZURE_WEBAPP_PUBLISH_PROFILE (preferred) or AZURE_FUNCTIONAPP_PUBLISH_PROFILE."
           exit 1
         fi
 
-    - name: 'Login via Azure CLI (RBAC fallback)'
-      if: ${{ env.AZURE_FUNCTIONAPP_PUBLISH_PROFILE == '' && env.AZURE_RBAC_CREDENTIALS != '' }}
-      uses: azure/login@v2
+    - name: 'Deploy to Azure Web App'
+      uses: azure/webapps-deploy@v3
+      id: deploy
       with:
-        creds: ${{ env.AZURE_RBAC_CREDENTIALS }}
-
-    - name: Setup Python ${{ env.PYTHON_VERSION }} Environment
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: 'Resolve Project Dependencies Using Pip'
-      shell: bash
-      run: |
-        pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt --target=".python_packages/lib/site-packages"
-        popd
-
-    - name: 'Run Azure Functions Action (Publish Profile)'
-      if: ${{ env.AZURE_FUNCTIONAPP_PUBLISH_PROFILE != '' }}
-      uses: Azure/functions-action@v1
-      id: fa_publish_profile
-      with:
-        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-        package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-        publish-profile: ${{ env.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
-        scm-do-build-during-deployment: true
-        enable-oryx-build: true
-
-    - name: 'Run Azure Functions Action (RBAC)'
-      if: ${{ env.AZURE_FUNCTIONAPP_PUBLISH_PROFILE == '' && env.AZURE_RBAC_CREDENTIALS != '' }}
-      uses: Azure/functions-action@v1
-      id: fa_rbac
-      with:
-        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-        package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-        scm-do-build-during-deployment: true
-        enable-oryx-build: true
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        publish-profile: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE != '' && env.AZURE_WEBAPP_PUBLISH_PROFILE || env.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
